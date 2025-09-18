@@ -1,122 +1,76 @@
-'use client'
+// In src/app/register/page.tsx
+'use client';
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { useAuth } from '@/context/AuthContext'
-import Button from '@/components/UI/Button'
-import Card from '@/components/UI/Card'
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/UI/Button';
 
-export default function Register() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  })
-  const [isLoading, setIsLoading] = useState(false)
-  const { register } = useAuth()
+export default function RegisterPage() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match")
-      return
-    }
-    setIsLoading(true)
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError('');
+    setLoading(true);
+
     try {
-      await register(formData)
-    } catch (error) {
-      console.error('Registration failed:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }))
-  }
+      if (res.ok) {
+        // Redirect to the login page on successful registration
+        router.push('/login');
+      } else {
+        const data = await res.json();
+        setError(data.message || 'Registration failed.');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="container mx-auto px-4 py-12 max-w-md">
-      <Card>
-        <h1 className="text-2xl font-bold text-center mb-6">Create Account</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
+        <h1 className="text-3xl font-bold text-center text-gray-800">Create an Account</h1>
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name
-            </label>
-            <input
-              id="name"
-              name="name"
-              type="text"
-              value={formData.name}
-              onChange={handleChange}
-              className="input-field"
-              required
-            />
+            <label htmlFor="name">Full Name</label>
+            <input id="name" type="text" required value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 mt-1 border rounded-md" />
           </div>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="input-field"
-              required
-            />
+            <label htmlFor="email">Email Address</label>
+            <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 mt-1 border rounded-md" />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="input-field"
-              required
-            />
+            <label htmlFor="password">Password</label>
+            <input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-3 py-2 mt-1 border rounded-md" />
           </div>
+          {error && <p className="text-sm text-red-600 text-center">{error}</p>}
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-              Confirm Password
-            </label>
-            <input
-              id="confirmPassword"
-              name="confirmPassword"
-              type="password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className="input-field"
-              required
-            />
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Registering...' : 'Register'}
+            </Button>
           </div>
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Creating Account...' : 'Create Account'}
-          </Button>
         </form>
-        <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            Already have an account?{' '}
-            <Link href="/login" className="text-primary-600 hover:underline">
-              Login here
-            </Link>
-          </p>
-        </div>
-      </Card>
+        <p className="text-sm text-center text-gray-600">
+          Already have an account?{' '}
+          <Link href="/login" className="font-medium text-blue-600 hover:underline">
+            Login
+          </Link>
+        </p>
+      </div>
     </div>
-  )
+  );
 }

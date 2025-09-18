@@ -1,176 +1,85 @@
-'use client'
+// In src/app/artisan/register/page.tsx
+'use client';
 
-import { useState } from 'react'
-import { useAuth } from '@/context/AuthContext'
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/UI/Button';
 
-export default function ArtisanRegister() {
+export default function ArtisanRegisterPage() {
   const [formData, setFormData] = useState({
     businessName: '',
     description: '',
     category: '',
-    yearsExperience: '',
-    portfolioUrl: '',
-    taxId: '',
-    bankAccount: ''
-  })
-  const [isLoading, setIsLoading] = useState(false)
-  const { user } = useAuth()
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    // Handle artisan registration
-    console.log('Artisan registration:', formData)
-    setIsLoading(false)
-  }
+  });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }))
-  }
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-  if (!user) {
-    return (
-      <div className="container mx-auto px-4 py-12 text-center">
-        <h1 className="text-2xl font-bold mb-4">Please log in first</h1>
-        <p className="text-gray-600">You need to be logged in to register as an artisan.</p>
-      </div>
-    )
-  }
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/artisans/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(data.message);
+        // Optionally redirect after a delay
+        setTimeout(() => router.push('/'), 2000);
+      } else {
+        setError(data.message || 'Application failed.');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <h1 className="text-3xl font-bold mb-8">Become an Artisan Seller</h1>
-      
-      <form onSubmit={handleSubmit} className="card space-y-6">
+    <div className="container mx-auto max-w-2xl py-12 px-4">
+      <h1 className="text-3xl font-bold text-center mb-8">Become an Artisan Seller</h1>
+      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-8 rounded-lg shadow-md">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Business Name *
-          </label>
-          <input
-            type="text"
-            name="businessName"
-            value={formData.businessName}
-            onChange={handleChange}
-            className="input-field"
-            required
-          />
+          <label htmlFor="businessName" className="block text-sm font-medium">Business Name</label>
+          <input id="businessName" name="businessName" type="text" required onChange={handleChange} className="w-full px-3 py-2 mt-1 border rounded-md" />
         </div>
-
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description *
-          </label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            rows={4}
-            className="input-field"
-            placeholder="Tell us about your craft, techniques, and inspiration..."
-            required
-          />
+          <label htmlFor="description" className="block text-sm font-medium">Description</label>
+          <textarea id="description" name="description" required onChange={handleChange} className="w-full px-3 py-2 mt-1 border rounded-md" rows={4}></textarea>
         </div>
-
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Category *
-          </label>
-          <select
-            name="category"
-            value={formData.category}
-            onChange={handleChange}
-            className="input-field"
-            required
-          >
+          <label htmlFor="category" className="block text-sm font-medium">Category</label>
+          <select id="category" name="category" required onChange={handleChange} className="w-full px-3 py-2 mt-1 border rounded-md">
             <option value="">Select a category</option>
             <option value="pottery">Pottery & Ceramics</option>
-            <option value="woodworking">Woodworking</option>
-            <option value="textiles">Textiles & Weaving</option>
             <option value="jewelry">Jewelry</option>
-            <option value="metalwork">Metalwork</option>
-            <option value="glass">Glass Art</option>
-            <option value="other">Other</option>
+            <option value="textiles">Textiles & Weaving</option>
+            <option value="woodworking">Woodworking</option>
           </select>
         </div>
-
+        
+        {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+        {success && <p className="text-sm text-green-600 text-center">{success}</p>}
+        
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Years of Experience *
-          </label>
-          <input
-            type="number"
-            name="yearsExperience"
-            value={formData.yearsExperience}
-            onChange={handleChange}
-            className="input-field"
-            min="0"
-            required
-          />
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? 'Submitting...' : 'Submit Application'}
+          </Button>
         </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Portfolio URL
-          </label>
-          <input
-            type="url"
-            name="portfolioUrl"
-            value={formData.portfolioUrl}
-            onChange={handleChange}
-            className="input-field"
-            placeholder="https://..."
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tax ID/EIN *
-            </label>
-            <input
-              type="text"
-              name="taxId"
-              value={formData.taxId}
-              onChange={handleChange}
-              className="input-field"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Bank Account Number *
-            </label>
-            <input
-              type="text"
-              name="bankAccount"
-              value={formData.bankAccount}
-              onChange={handleChange}
-              className="input-field"
-              required
-            />
-          </div>
-        </div>
-
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <h3 className="font-semibold mb-2">Verification Process</h3>
-          <p className="text-sm text-blue-700">
-            After submission, our team will review your application. This process typically takes 2-3 business days. 
-            You'll receive an email notification once your artisan account is approved.
-          </p>
-        </div>
-
-        <button 
-          type="submit" 
-          className="w-full btn-primary disabled:opacity-50"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Submitting...' : 'Submit Application'}
-        </button>
       </form>
     </div>
-  )
+  );
 }
