@@ -1,10 +1,11 @@
-// In src/components/Form/ProductForm.tsx
+// In src/app/artisan/products/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/UI/Button';
+import ProductForm from '@/components/Form/ProductForm';
 
-// Define a simple Product type (you can expand this)
+// Define a simple Product type (should match the one in your ProductForm)
 interface Product {
   id: string;
   name: string;
@@ -12,73 +13,80 @@ interface Product {
   description: string;
 }
 
-// Define the props the component will accept
-interface ProductFormProps {
-  product: Product | null; // The product to edit, or null for a new product
-  onSave: (productData: Omit<Product, 'id'>) => void; // Function to call when saving
-  onClose: () => void; // Function to call when closing the form
-}
+// This is the main page component
+export default function ArtisanProductsPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-export default function ProductForm({ product, onSave, onClose }: ProductFormProps) {
-  // State to manage the form's input fields
-  const [formData, setFormData] = useState({
-    name: '',
-    price: 0,
-    description: '',
-  });
-
-  // Use useEffect to populate the form when an existing product is passed in
+  // Fetch products (mocked for now)
   useEffect(() => {
-    if (product) {
-      setFormData({
-        name: product.name,
-        price: product.price,
-        description: product.description,
-      });
-    }
-  }, [product]);
+    // In a real app, you would fetch this from your API
+    const mockProducts: Product[] = [
+      { id: '1', name: 'Handcrafted Mug', price: 25, description: 'A beautiful ceramic mug.' },
+      { id: '2', name: 'Wooden Bowl', price: 40, description: 'Carved from solid oak.' },
+    ];
+    setProducts(mockProducts);
+  }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleOpenModal = (product: Product | null) => {
+    setEditingProduct(product);
+    setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave({
-      ...formData,
-      price: Number(formData.price) // Ensure price is a number
-    });
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingProduct(null);
+  };
+
+  const handleSaveProduct = (productData: Omit<Product, 'id'>) => {
+    if (editingProduct) {
+      // Logic to update an existing product
+      setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...productData } : p));
+    } else {
+      // Logic to add a new product
+      const newProduct: Product = { id: Date.now().toString(), ...productData };
+      setProducts([...products, newProduct]);
+    }
+    handleCloseModal();
   };
 
   return (
-    // The form is often shown inside a modal
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="w-full max-w-lg p-8 space-y-6 bg-white rounded-lg shadow-xl">
-        <h2 className="text-2xl font-bold">{product ? 'Edit Product' : 'Add New Product'}</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="name">Product Name</label>
-            <input id="name" name="name" type="text" required value={formData.name} onChange={handleChange} className="w-full p-2 mt-1 border rounded-md" />
-          </div>
-          <div>
-            <label htmlFor="price">Price</label>
-            <input id="price" name="price" type="number" required value={formData.price} onChange={handleChange} className="w-full p-2 mt-1 border rounded-md" />
-          </div>
-          <div>
-            <label htmlFor="description">Description</label>
-            <textarea id="description" name="description" required value={formData.description} onChange={handleChange} className="w-full p-2 mt-1 border rounded-md" rows={4}></textarea>
-          </div>
-          <div className="flex justify-end gap-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">
-              {product ? 'Save Changes' : 'Add Product'}
-            </Button>
-          </div>
-        </form>
+    <div className="container mx-auto py-12 px-4">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Manage Your Products</h1>
+        <Button onClick={() => handleOpenModal(null)}>Add New Product</Button>
       </div>
+
+      {/* Product List */}
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="space-y-4">
+          {products.map(product => (
+            <div key={product.id} className="flex justify-between items-center border-b pb-2">
+              <div>
+                <p className="font-semibold">{product.name}</p>
+                <p className="text-sm text-gray-600">${product.price}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => handleOpenModal(product)}>
+                  Edit
+                </Button>
+                {/* Add delete logic here */}
+                <Button variant="destructive" size="sm">Delete</Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Form Modal */}
+      {isModalOpen && (
+        <ProductForm 
+          product={editingProduct} 
+          onSave={handleSaveProduct} 
+          onClose={handleCloseModal} 
+        />
+      )}
     </div>
   );
 }
