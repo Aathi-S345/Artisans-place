@@ -1,113 +1,84 @@
-'use client'
+// In src/app/checkout/page.tsx
+'use client';
 
-import { useState } from 'react'
-import { useCart, CartItem } from '@/context/CartContext'
+import { useCartStore } from '@/store/cartStore';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/UI/Button';
+import { useState } from 'react';
 
-export default function Checkout() {
-  // CORRECTED: The context now provides `items`, not `cartItems`.
-  // Also getting `totalPrice` directly from the context.
-  const { items, removeFromCart, updateQuantity, totalPrice } = useCart();
-  
-  const [formData, setFormData] = useState({
-    email: '',
-    firstName: '',
-    lastName: '',
-    address: '',
-    city: '',
-    zipCode: '',
-    country: 'United States',
-    cardNumber: '',
-    expiryDate: '',
-    cvv: '',
-    nameOnCard: ''
-  });
+export default function CheckoutPage() {
+  const { items, clearCart } = useCartStore();
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
-  // Simplified totals using `totalPrice` from context
-  const shipping = items.length > 0 ? 5.99 : 0;
-  const tax = totalPrice * 0.08;
-  const total = totalPrice + shipping + tax;
+  const totalPrice = items.reduce((total, item) => total + item.price * item.quantity, 0);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // CORRECTED: Use `items` here
-    console.log('Order placed:', { items, formData, total });
-    alert('Order submitted! (Check the console for details)');
-  }
+  const handleCheckout = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }))
-  }
+    // This is where you would integrate a real payment provider like Stripe.
+    // For now, we will simulate a successful payment.
+    console.log("Simulating payment for order with total:", totalPrice);
 
-  // CORRECTED: Check `items.length`
-  if (items.length === 0) {
+    // Simulate a delay for the payment process
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // After "payment" is successful, clear the cart and redirect.
+    clearCart();
+    alert("Payment successful! Thank you for your order.");
+    router.push('/');
+  };
+
+  if (items.length === 0 && !loading) {
     return (
-      <div className="container mx-auto px-4 py-12 text-center">
-        <h1 className="text-2xl font-bold mb-4">Your cart is empty</h1>
-        <p className="text-gray-600">Add some items to your cart before checking out.</p>
+      <div className="text-center p-10">
+        <h1 className="text-2xl font-bold">Your Cart is empty.</h1>
+        <p>You cannot proceed to checkout without items in your cart.</p>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Checkout</h1>
-      
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        {/* Customer Information Column */}
-        <div className="lg:col-span-2">
-            {/* ... your form inputs ... */}
-        </div>
-
-        {/* Order Summary Column */}
-        <div>
-          <div className="card sticky top-8">
-            <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-            <div className="space-y-4 mb-6">
-              {/* CORRECTED: Map over `items` */}
-              {items.map((item: CartItem) => (
-                <div key={item.id} className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    {/* CORRECTED: Use `item.image` for the src */}
-                    <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded mr-4" />
-                    <div>
-                      <p className="font-medium">{item.name}</p>
-                      <div className="flex items-center text-sm text-gray-600">
-                        Qty: 
-                        <input 
-                          type="number" 
-                          min="1" 
-                          value={item.quantity} 
-                          onChange={(e) => updateQuantity(item.id, parseInt(e.target.value))}
-                          className="w-12 ml-2 border rounded px-1 text-center"
-                        />
-                      </div>
-                      <button type="button" onClick={() => removeFromCart(item.id)} className="text-red-500 hover:text-red-700 text-xs font-semibold">
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                  <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
-                </div>
-              ))}
-            </div>
-            <div className="space-y-2 border-t pt-4">
-              <div className="flex justify-between"><span>Subtotal</span><span>${totalPrice.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>Shipping</span><span>${shipping.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>Tax</span><span>${tax.toFixed(2)}</span></div>
-              <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
-                <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+    <div className="container mx-auto max-w-4xl py-12 px-4">
+      <h1 className="text-3xl font-bold text-center mb-8">Checkout</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+        {/* Order Summary */}
+        <div className="bg-gray-50 p-6 rounded-lg">
+          <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+          <div className="space-y-3">
+            {items.map(item => (
+              <div key={item.id} className="flex justify-between">
+                <span>{item.name} (x{item.quantity})</span>
+                <span>${(item.price * item.quantity).toFixed(2)}</span>
               </div>
-            </div>
-            <button type="submit" className="w-full btn-primary mt-6">
-              Place Order
-            </button>
+            ))}
+          </div>
+          <hr className="my-4" />
+          <div className="flex justify-between font-bold text-lg">
+            <span>Total</span>
+            <span>${totalPrice.toFixed(2)}</span>
           </div>
         </div>
-      </form>
+
+        {/* Shipping Form */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Shipping Information</h2>
+          <form onSubmit={handleCheckout} className="space-y-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium">Full Name</label>
+              <input type="text" id="name" required className="w-full mt-1 p-2 border rounded-md" />
+            </div>
+            <div>
+              <label htmlFor="address" className="block text-sm font-medium">Address</label>
+              <input type="text" id="address" required className="w-full mt-1 p-2 border rounded-md" />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Processing...' : `Pay $${totalPrice.toFixed(2)}`}
+            </Button>
+          </form>
+        </div>
+      </div>
     </div>
-  )
+  );
 }
